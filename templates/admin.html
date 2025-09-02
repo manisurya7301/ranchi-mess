@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <h1> Ranchi Mess Service</h1>
+            {% if not login_page %}
+                <a href="/admin/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container">
+        {% if login_page %}
+            <div class="login-form">
+                <h1><i class="fas fa-lock"></i> Admin Login</h1>
+                {% if error %}
+                    <p class="error">{{ error }}</p>
+                {% endif %}
+                <form method="POST" action="/admin">
+                    <div class="form-row">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" required placeholder="Enter admin username">
+                    </div>
+                    <div class="form-row">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required placeholder="Enter password">
+                    </div>
+                    <button type="submit">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                <a href="/" class="back-link">
+                    <i class="fas fa-arrow-left"></i> Back to Services
+                </a>
+            </div>
+        {% else %}
+<!-- Add this to your admin.html template -->
+<div class="section">
+  <h2>Shop Status</h2>
+  <div class="form-row">
+    <p>Current Status: <strong>{{ 'OPEN' if shop_status.is_open else 'CLOSED' }}</strong></p>
+    <form action="/admin/toggle_shop_status" method="POST" style="display: inline;">
+      <button type="submit" class="btn-{{ 'danger' if shop_status.is_open else 'success' }}">
+        {{ 'Close Shop' if shop_status.is_open else 'Open Shop' }}
+      </button>
+    </form>
+  </div>
+
+  {% if not shop_status.is_open %}
+  <div class="form-row">
+    <form action="/admin/update_closed_message" method="POST">
+      <label for="message">Closed Message:</label>
+      <textarea name="message" id="message" rows="3" style="width: 100%; padding: 10px;">{{ shop_status.message }}</textarea>
+      <button type="submit" class="btn-primary">Update Message</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+            <div class="nav-links">
+                <a href="/" class="nav-link">
+                    <i class="fas fa-store"></i> View Shop
+                </a>
+                <a href="/admin/panel" class="nav-link">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </a>
+            </div>
+            <!-- Add this right after the nav-links div -->
+<div class="search-container">
+    <input type="text" id="admin-search" placeholder="Search categories, subcategories, services, variants...">
+    <button id="search-btn"><i class="fas fa-search"></i> Search</button>
+    <div id="search-results" class="search-results"></div>
+</div>
+
+            <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+
+            <!-- Add Category Form -->
+            <div class="section">
+                <h2><i class="fas fa-plus-circle"></i> Add New Category</h2>
+                <form method="POST" action="/admin/add_category" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <label for="name">Category Name:</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter category name">
+                    </div>
+                    <div class="form-row">
+                        <label>Category Image:</label>
+                        <input type="file" name="image" accept="image/jpeg, image/png">
+                        <small>Only JPG/PNG images (Max 2MB)</small>
+                    </div>
+                    <button type="submit">
+                        <i class="fas fa-save"></i> Add Category
+                    </button>
+                </form>
+            </div>
+
+            <!-- Categories List -->
+            {% for category in services_data.categories %}
+            <div class="section">
+                <div class="toggle-container">
+                    <div class="toggle-header category-header" onclick="toggleSection('category-{{ category.id }}', this)">
+                        <i class="fas fa-caret-right"></i>
+                        <i class="fas fa-folder"></i>
+                        <span class="toggle-title">{{ category.name }}</span>
+                    </div>
+
+                    <div id="category-{{ category.id }}" class="collapsible-content">
+                        <!-- Category Edit Form -->
+                        <form method="POST" action="/admin/update_category/{{ category.id }}" enctype="multipart/form-data" class="toggle-section">
+                            <div class="form-row">
+                                <input type="text" name="name" value="{{ category.name }}" required>
+                            </div>
+                            <div class="form-row">
+                                {% if category.image_filename %}
+                                <img src="/static/categories/{{ category.image_filename }}" style="max-width: 100px; max-height: 100px;">
+                                {% endif %}
+                                <input type="file" name="image" accept="image/jpeg, image/png">
+                            </div>
+                            <div class="action-buttons">
+                                <button type="submit"><i class="fas fa-edit"></i> Update</button>
+                                <a href="/admin/delete_category/{{ category.id }}" class="btn-danger">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </div>
+                        </form>
+
+                        <!-- Add Subcategory Toggle -->
+                        <div class="toggle-header subcategory-toggle" onclick="toggleSection('add-subcat-{{ category.id }}')">
+                            <i class="fas fa-caret-right"></i>
+                            <h4><i class="fas fa-plus-circle"></i> Add Subcategory</h4>
+                        </div>
+
+                        <div id="add-subcat-{{ category.id }}" class="collapsible">
+                            <form method="POST" action="/admin/add_subcategory/{{ category.id }}" class="toggle-section">
+                                <div class="form-row">
+                                    <input type="text" name="name" required placeholder="Enter subcategory name">
+                                </div>
+                                <button type="submit"><i class="fas fa-save"></i> Add Subcategory</button>
+                            </form>
+                        </div>
+
+                       <!-- Inside the category loop, modify the subcategory section -->
+{% for subcategory in category.subcategories %}
+<div class="toggle-container">
+    <div class="toggle-header subcategory-header" onclick="toggleSection('subcat-{{ subcategory.id }}', this)">
+        <i class="fas fa-caret-right"></i>
+        <i class="fas fa-folder-open"></i>
+        <span class="toggle-title">{{ subcategory.name }}</span>
+    </div>
+
+    <div id="subcat-{{ subcategory.id }}" class="collapsible">
+        <!-- Subcategory Edit Form -->
+        <form method="POST" action="/admin/update_subcategory/{{ category.id }}/{{ subcategory.id }}" class="toggle-section">
+            <div class="form-row">
+                <input type="text" name="name" value="{{ subcategory.name }}" required>
+            </div>
+            <div class="action-buttons">
+                <button type="submit"><i class="fas fa-edit"></i> Update</button>
+                <a href="/admin/delete_subcategory/{{ category.id }}/{{ subcategory.id }}" class="btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            </div>
+        </form>
+
+        <!-- Add Service Toggle -->
+        <div class="toggle-header" onclick="toggleSection('add-service-{{ subcategory.id }}')">
+            <i class="fas fa-caret-right"></i>
+            <h6><i class="fas fa-plus-circle"></i> Add Service</h6>
+        </div>
+
+        <div id="add-service-{{ subcategory.id }}" class="collapsible">
+            <form method="POST" action="/admin/add_service/{{ category.id }}/{{ subcategory.id }}" class="toggle-section">
+                <div class="form-row">
+                    <label>Service Name:</label>
+                    <input type="text" name="name" required placeholder="Enter service name">
+                </div>
+                <div class="form-row">
+                    <label>Description:</label>
+                    <textarea name="description" placeholder="Enter service description"></textarea>
+                </div>
+                <button type="submit"><i class="fas fa-save"></i> Add Service</button>
+            </form>
+        </div>
+
+{% for category in services_data.categories %}
+<div class="section">
+    <!-- Category content -->
+
+    {% for subcategory in category.subcategories %}
+    <div class="toggle-container">
+        <!-- Subcategory content -->
+
+        {% for service in subcategory.services %}
+        <div class="toggle-container">
+            <!-- Service content -->
+        </div>
+        {% endfor %}
+
+    </div>
+    {% endfor %}
+
+</div>
+{% endfor %}
+
+
+                                <!-- Services List -->
+                                {% for service in subcategory.services %}
+                                <div class="toggle-container">
+                                    <div class="toggle-header service-header" onclick="toggleSection('service-{{ service.id }}', this)">
+                                        <i class="fas fa-caret-right"></i>
+                                        <i class="fas fa-tools"></i>
+                                        <span class="toggle-title">{{ service.name }}</span>
+                                    </div>
+
+                                    <div id="service-{{ service.id }}" class="collapsible">
+                                        <!-- Service Edit Form -->
+                                        <form method="POST" action="/admin/update_service/{{ category.id }}/{{ subcategory.id }}/{{ service.id }}" class="toggle-section">
+                                            <div class="form-row">
+                                                <label>Service Name:</label>
+                                                <input type="text" name="name" value="{{ service.name }}" required>
+                                            </div>
+                                            <div class="form-row">
+                                                <label>Description:</label>
+                                                <textarea name="description">{% if service.description %}{{ service.description }}{% endif %}</textarea>
+                                            </div>
+
+                                            <div class="action-buttons">
+                                                <button type="submit"><i class="fas fa-edit"></i> Update</button>
+                                                <a href="/admin/delete_service/{{ category.id }}/{{ subcategory.id }}/{{ service.id }}" class="btn-danger">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </a>
+                                            </div>
+                                        </form>
+
+                                        <!-- Variants Section -->
+                                        <div class="toggle-header" onclick="toggleSection('variants-{{ service.id }}')">
+                                            <i class="fas fa-caret-right"></i>
+                                            <h6><i class="fas fa-list"></i> Variants</h6>
+                                        </div>
+
+                                        <div id="variants-{{ service.id }}" class="collapsible">
+                                            <!-- Add Variant Form -->
+                                            <form method="POST" action="/admin/add_variant/{{ service.id }}" class="toggle-section">
+                                                <div class="form-row">
+                                                    <label>Variant Name:</label>
+                                                    <input type="text" name="name" required placeholder="e.g., 1 Bedroom, 2 Bedroom">
+                                                </div>
+                                                <div class="form-row">
+                                                    <label>Price (₹):</label>
+                                                    <input type="number" name="price" min="1" required>
+                                                </div>
+                                                <div class="form-row">
+                                                    <label>Unit:</label>
+                                                    <input type="text" name="unit" required placeholder="e.g., per session, per hour" value="per service">
+                                                </div>
+                                                <div class="form-row checkbox-container">
+                                                    <input type="checkbox" name="available" checked>
+                                                    <label>Available</label>
+                                                </div>
+                                                <button type="submit"><i class="fas fa-plus"></i> Add Variant</button>
+                                            </form>
+
+                                            <!-- Variants List -->
+                                            {% for variant in service.variants %}
+                                            <div class="toggle-container">
+                                                <div class="toggle-header" onclick="toggleSection('variant-{{ variant.id }}', this)">
+                                                    <i class="fas fa-caret-right"></i>
+                                                    <span class="toggle-title">{{ variant.name }} - ₹{{ variant.price }} ({{ variant.unit }})</span>
+                                                </div>
+
+                                                <div id="variant-{{ variant.id }}" class="collapsible">
+                                                    <form method="POST" action="/admin/update_variant/{{ variant.id }}" class="toggle-section">
+                                                        <div class="form-row">
+                                                            <label>Variant Name:</label>
+                                                            <input type="text" name="name" value="{{ variant.name }}" required>
+                                                        </div>
+                                                        <div class="form-row">
+                                                            <label>Price (₹):</label>
+                                                            <input type="number" name="price" value="{{ variant.price }}" min="1" required>
+                                                        </div>
+                                                        <div class="form-row">
+                                                            <label>Unit:</label>
+                                                            <input type="text" name="unit" value="{{ variant.unit }}" required>
+                                                        </div>
+                                                        <div class="form-row checkbox-container">
+                                                            <input type="checkbox" name="available" {% if variant.available %}checked{% endif %}>
+                                                            <label>Available</label>
+                                                        </div>
+                                                        <div class="action-buttons">
+                                                            <button type="submit"><i class="fas fa-edit"></i> Update</button>
+                                                            <a href="/admin/delete_variant/{{ variant.id }}" class="btn-danger">
+                                                                <i class="fas fa-trash"></i> Delete
+                                                            </a>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+
+                                        <!-- Image Upload Section -->
+                                        <div class="toggle-section" style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px;">
+                                            <h5><i class="fas fa-image"></i> Upload Service Image</h5>
+                                            {% if service.image_filename %}
+                                            <div style="margin-bottom: 10px;">
+                                                <img src="/static/services/{{ service.image_filename }}" style="max-width: 100px; max-height: 100px;">
+                                            </div>
+                                            {% endif %}
+                                            <form method="POST" action="/admin/upload_service_image/{{ service.id }}" enctype="multipart/form-data">
+                                                <div class="form-row">
+                                                    <input type="file" name="file" accept="image/jpeg, image/png" required>
+                                                    <small>Only JPG/PNG images (Max 2MB)</small>
+                                                </div>
+                                                <button type="submit" class="btn-warning" style="margin-top: 10px;">
+                                                    <i class="fas fa-upload"></i> Upload Image
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </main>
+
+    <script>
+        // Toggle Section by ID
+        // Modify the toggleSection function to include caret rotation
+function toggleSection(id, clickedHeader = null) {
+    const section = document.getElementById(id);
+    if (!section) return;
+
+    const isVisible = section.style.display === 'block';
+    section.style.display = isVisible ? 'none' : 'block';
+
+    if (clickedHeader) {
+        clickedHeader.classList.toggle('active', !isVisible);
+        const caretIcon = clickedHeader.querySelector('.fa-caret-right');
+        if (caretIcon) {
+            caretIcon.style.transform = isVisible ?
+                'translateY(-50%) rotate(0deg)' :
+                'translateY(-50%) rotate(90deg)';
+        }
+    }
+}
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('admin-search');
+    const searchBtn = document.getElementById('search-btn');
+    const searchResults = document.getElementById('search-results');
+
+    // Get all searchable items from the DOM
+    function getAllSearchableItems() {
+        const items = [];
+
+        // Categories
+        document.querySelectorAll('.category-header .toggle-title').forEach(el => {
+            const id = el.closest('.toggle-container').querySelector('.collapsible-content').id;
+            items.push({
+                type: 'Category',
+                name: el.textContent.trim(),
+                id: id,
+                element: el.closest('.toggle-container')
+            });
+        });
+
+        // Subcategories
+        document.querySelectorAll('.subcategory-header .toggle-title').forEach(el => {
+            const id = el.closest('.toggle-container').querySelector('.collapsible').id;
+            items.push({
+                type: 'Subcategory',
+                name: el.textContent.trim(),
+                id: id,
+                element: el.closest('.toggle-container')
+            });
+        });
+
+        // Services
+        document.querySelectorAll('.service-header .toggle-title').forEach(el => {
+            const id = el.closest('.toggle-container').querySelector('.collapsible').id;
+            items.push({
+                type: 'Service',
+                name: el.textContent.trim(),
+                id: id,
+                element: el.closest('.toggle-container')
+            });
+        });
+
+        // Variants
+        document.querySelectorAll('.toggle-header:not(.category-header):not(.subcategory-header):not(.service-header) .toggle-title').forEach(el => {
+            if (el.closest('.toggle-container').querySelector('.collapsible')) {
+                const id = el.closest('.toggle-container').querySelector('.collapsible').id;
+                items.push({
+                    type: 'Variant',
+                    name: el.textContent.trim(),
+                    id: id,
+                    element: el.closest('.toggle-container')
+                });
+            }
+        });
+
+        return items;
+    }
+
+    // Perform search
+    function performSearch() {
+        const query = searchInput.value.trim().toLowerCase();
+        if (!query) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        const allItems = getAllSearchableItems();
+        const filtered = allItems.filter(item =>
+            item.name.toLowerCase().includes(query)
+        );
+
+        displayResults(filtered);
+    }
+
+    // Display search results
+    function displayResults(results) {
+        searchResults.innerHTML = '';
+
+        if (results.length === 0) {
+            searchResults.innerHTML = '<div class="search-result-item">No results found</div>';
+            searchResults.style.display = 'block';
+            return;
+        }
+
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'search-result-item';
+            item.innerHTML = `
+                <span class="type">[${result.type}]</span>
+                ${result.name}
+            `;
+            item.addEventListener('click', () => {
+                navigateToResult(result);
+            });
+            searchResults.appendChild(item);
+        });
+
+        searchResults.style.display = 'block';
+    }
+
+    // Navigate to the search result
+    function navigateToResult(result) {
+        // Close all sections first
+        document.querySelectorAll('.collapsible, .collapsible-content').forEach(el => {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.toggle-header').forEach(header => {
+            header.classList.remove('active');
+        });
+
+        // Open the target section and all its parents
+        let currentElement = result.element;
+        while (currentElement) {
+            const header = currentElement.querySelector('.toggle-header');
+            const content = currentElement.querySelector('.collapsible, .collapsible-content');
+
+            if (header && content) {
+                header.classList.add('active');
+                content.style.display = 'block';
+
+                // Update caret icon
+                const caret = header.querySelector('.fa-caret-right');
+                if (caret) {
+                    caret.style.transform = 'translateY(-50%) rotate(90deg)';
+                }
+            }
+
+            currentElement = currentElement.parentElement.closest('.toggle-container');
+        }
+
+        // Scroll to the element
+        result.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Clear search
+        searchInput.value = '';
+        searchResults.style.display = 'none';
+    }
+
+    // Event listeners
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('input', performSearch);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchResults.contains(e.target) && e.target !== searchInput && e.target !== searchBtn) {
+            searchResults.style.display = 'none';
+        }
+    });
+});
+
+        // On DOM Load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Hide all collapsibles by default
+            document.querySelectorAll('.collapsible, .collapsible-content').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Handle all headers with toggle-header class
+            document.querySelectorAll('.toggle-header').forEach(header => {
+                const caretIcon = header.querySelector('.fa-caret-right');
+                header.classList.remove('active');
+                if (caretIcon) {
+                    caretIcon.style.transform = 'translateY(-50%) rotate(0deg)';
+                }
+            });
+            handleInitialFragment();
+            // Restore scroll position after submit
+            const scrollY = localStorage.getItem("scrollY");
+            if (scrollY !== null) {
+                window.scrollTo(0, parseInt(scrollY));
+                localStorage.removeItem("scrollY");
+            }
+
+
+    // Confirm before any delete action
+    document.querySelectorAll('a.btn-danger').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm('Are you sure you want to delete this?')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Confirm before any form submission (except login)
+    document.querySelectorAll('form').forEach(form => {
+        if (!form.action.includes('/admin') || form.action.endsWith('/admin')) {
+            return; // skip login form
+        }
+
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure to make these changes?')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+        });
+
+    // Add this to the existing script in admin.html
+// Modify the handleInitialFragment function to better handle variants
+function handleInitialFragment() {
+    const hash = window.location.hash;
+    if (hash) {
+        const targetId = hash.substring(1); // Remove the #
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+            // Special handling for variants - make sure their service section is open
+            if (targetId.startsWith('variant-')) {
+                const variantContainer = targetElement.closest('.toggle-container');
+                if (variantContainer) {
+                    const variantsSection = variantContainer.closest('.collapsible');
+                    if (variantsSection) {
+                        const variantsHeader = variantsSection.previousElementSibling;
+                        if (variantsHeader && variantsHeader.classList.contains('toggle-header')) {
+                            toggleSection(variantsSection.id, variantsHeader);
+                        }
+                    }
+                }
+            }
+
+            // Open all parent sections
+            let currentElement = targetElement.closest('.toggle-container');
+            while (currentElement) {
+                const header = currentElement.querySelector('.toggle-header');
+                const content = currentElement.querySelector('.collapsible, .collapsible-content');
+
+                if (header && content) {
+                    header.classList.add('active');
+                    content.style.display = 'block';
+
+                    // Update caret icon
+                    const caret = header.querySelector('.fa-caret-right');
+                    if (caret) {
+                        caret.style.transform = 'translateY(-50%) rotate(90deg)';
+                    }
+                }
+
+                currentElement = currentElement.parentElement.closest('.toggle-container');
+            }
+
+            // Scroll to the element
+            setTimeout(() => {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+}
+
+    </script>
+</body>
+</html>

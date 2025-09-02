@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Ranchi Mess Service</title>
+
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+  /* Existing splash screen styles */
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  animation: fadeOut 1s ease-in-out 2s forwards;
+}
+
+.splash-logo {
+  font-size: 3.0rem;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  margin-left: 17px;
+}
+
+.splash-logo img {
+  max-width: 270px;
+  height: auto;
+  animation: logoFadeIn 1s ease-in-out, logoStay 1s 1s forwards;
+}
+
+/* New animations */
+@keyframes logoFadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes logoStay {
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; visibility: hidden; }
+}
+/* Product Details Modal */
+#productDetailsModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+
+#productDetailsModal .modal-content {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.3);
+  animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#modalProductName {
+  color: var(--primary);
+  margin-bottom: 15px;
+  font-size: 1.3rem;
+}
+
+#modalProductDescription {
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+</style>
+</head>
+<body>
+<div class="splash-screen" id="splashScreen">
+  <div class="splash-logo">
+    <img
+      src="/static/ranchi-logo (1).png"
+      alt="Ranchi Mess Service"
+      class="white-logo"
+      style="max-width: 270px; height: auto;">
+  </div>
+</div>
+  <div class="contact-float">
+    <!-- Phone Button -->
+    <a href="tel:8969161759" class="contact-btn phone-btn">
+      <img src="/static/call-logo.png" alt="Call">
+    </a>
+
+    <!-- WhatsApp Button -->
+    <a href="https://wa.me/+918969161759?text=Hi%20Mani%20Bro,%20I%20need%20a%20mess"
+       class="contact-btn whatsapp-btn">
+      <img src="/static/whatsapp.png" alt="WhatsApp">
+    </a>
+  </div>
+
+  {% if not show_whatsapp %}
+  <form method="POST" action="/submit_order">
+    <div class="container">
+      <h1>Ranchi Mess Service</h1>
+
+      <div class="search-container">
+        <input type="text" class="search-bar" placeholder="Search For Service. . . . ." id="searchInput" autocomplete="off">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+     <!-- Search Container के बाद यह जोड़ें -->
+<div class="delivery-banner">
+  <span class="twinkle">✨</span>
+  <span>Search And Order Meal</span>
+  <span class="twinkle">✨</span>
+</div>
+      <div class="category-bar" id="categoryBar"></div>
+      <div class="subcategory-section" id="subcategorySection"></div>
+
+      <div class="summary" id="orderSummary">
+  <h3 style="margin-top: 0; margin-bottom: 8px;">Order Summary:</h3>
+  <div id="cartItems" style="margin-bottom: 10px;"></div>
+
+  <!-- Add these lines for subtotal and delivery charge -->
+  <div style="margin: 10px 0; border-top: 1px dashed #ccc; padding-top: 5px;">
+    <div style="display: flex; justify-content: space-between;">
+      <span>Subtotal:</span>
+      <span>₹<span id="subtotalAmount">0</span></span>
+    </div>
+    </div>
+  <!-- Update the total display -->
+  <strong style="display: block; margin: 10px 0 5px 0; border-top: 1px dashed #ccc; padding-top: 5px;">
+    Total: ₹<span id="totalAmount">0</span>
+  </strong>
+</div>
+      <!-- In the order summary section, add this after the total amount -->
+
+<!-- COLLAPSIBLE: Customer + Service Details -->
+<div id="customerDetailsContainer" style="display: none;">
+  <div style="margin-top: 20px; border: 1px solid #BDBDBD; border-radius: 6px; padding: 10px;">
+    <div onclick="toggleCombinedSection()" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0;">📙Customer & Order Details:</h3>
+      <span id="toggleIcon">⬇️</span><br>
+    </div>
+    <div id="customerSection"></div>
+    <div id="combinedDetails" style="display: none; margin-top: 15px;">
+      <!-- Customer Details -->
+      <input type="text" name="name" placeholder="Your Name" required
+           pattern="[A-Za-z ]{2,30}"
+           title="Please enter a valid name (2-30 alphabetic characters)"
+           oninput="validateName(this)">
+      <div id="nameError" class="error-message"></div><br>
+
+      <input type="tel" name="phone" placeholder="Mobile Number" required
+           pattern="[0-9]{10}"
+           title="Please enter a 10-digit phone number"
+           oninput="validatePhone(this)">
+      <div id="phoneError" class="error-message"></div><br>
+
+      <input type="text" name="address" placeholder="Address" required
+           minlength="5" maxlength="200"
+           title="Address should be 5-200 characters long"
+           oninput="validateAddress(this)">
+      <div id="addressError" class="error-message"></div><br>
+
+      <!-- Service Details -->
+      <div id="upiSection">
+        <h4 style="text-align: center; margin-bottom: 15px; color: var(--primary);">Scan & Pay</h4>
+        <div class="upi-container" style="flex-direction: column; align-items: center; text-align: center;">
+          <div class="qr-code" style="margin-bottom: 15px;">
+            <img src="/static/qr.jpg" alt="UPI QR Code" style="width: 200px; height: 200px; border: 8px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+          </div>
+          <div class="upi-details" style="text-align: center;">
+            <p style="margin-bottom: 8px; font-weight: 600; color: var(--text-primary);">Pay using any UPI app:</p>
+            <div class="upi-id" style="margin: 0 auto 10px; font-size: 15px; padding: 10px 15px; background: red;">
+              8969161759@ptyes
+            </div>
+          </div>
+          <div class="note" style="margin: 15px auto; padding: 12px; background: rgba(255, 0, 0, 0.08); border-left: 4px solid var(--error);">
+            <strong style="color: var(--error);">Important:</strong> After payment, click "Place Order" and share payment screenshot on WhatsApp
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Controls -->
+  <div id="orderControls" style="margin-top: 15px;">
+    <button id="placeOrderBtn" onclick="toggleCombinedSection()" type="submit" style="display: none; width: 100%; padding: 12px; background:#CB202D; color: white; border: none; border-radius: 50px; font-size:18px; font-weight:bold; cursor: pointer;">
+      Place Order
+    </button>
+  </div>
+</div>
+
+<div id="minOrderWarning">
+  <strong>Minimum service amount is ₹100</strong>
+</div>
+
+<div id="hiddenCartInputs"></div>
+<script>
+function generateHiddenInputs() {
+  const container = document.getElementById('hiddenCartInputs');
+  container.innerHTML = '';
+
+  for (const key in cartQuantities) {
+    if (cartQuantities[key].qty > 0) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = cartQuantities[key].qty;
+      container.appendChild(input);
+    }
+  }
+}
+
+// Bind to form submit
+document.querySelector('form').addEventListener('submit', generateHiddenInputs);
+</script>
+  </form>
+
+
+
+
+  <div id="viewCartBtn" class="view-cart-btn" style="display: none;">
+  <div class="cart-icon-circle">📋</div>
+  <div class="cart-text">
+    <div>View Service</div>
+    <div id="cartItemCount">0</div>
+  </div>
+</div>
+  {% endif %}
+</div>
+<footer class="footer">
+
+  <div class="footer-links">
+    <a href="/menu" class="footer-link"style= "font-weight:bold;">📋 Mess Menu</a>
+    <a href="/terms" class="footer-link"style= "font-weight:bold;">📜 Terms & Rules</a>
+    <a href="/about" class="footer-link"
+style= "font-weight:bold;">🖥 About</a>
+  </div>
+  <p style="font-weight:bold;color:white;">&copy;2025 Ranchi Mess Service Developed By
+    <a href="https://wa.me/+918969161759?text=Hi%20Mani%2C%20I%20need%20your%20Mess" target="_blank"
+style= "font-weight:bold;color:red;font-size:14px;">
+      Suryamani
+    </a>
+  </p>
+</footer>
+<script>
+let customerSectionOpenedOnce = false;
+
+// Modify the prepareCategories function to include variants
+function prepareCategories() {
+  const categoriesMap = {};
+
+  {% for category in services_data.categories %}
+    categoriesMap["{{ category.id }}"] = {
+      id: "{{ category.id }}",
+      name: "{{ category.name }}",
+      image_filename: "{{ category.image_filename }}",
+      subcategories: []
+    };
+
+    {% for subcategory in category.subcategories %}
+      categoriesMap["{{ category.id }}"].subcategories.push({
+        name: "{{ subcategory.name }}",
+        services: []
+      });
+
+      {% for service in subcategory.services %}
+        categoriesMap["{{ category.id }}"].subcategories[
+          categoriesMap["{{ category.id }}"].subcategories.length - 1
+        ].services.push({
+          id: "{{ service.id }}",
+          name: "{{ service.name }}",
+          stock: {{ service.available|lower }},
+          variants: [
+            {% for variant in service.variants %}
+            {
+              id: "{{ variant.id }}",
+              name: "{{ variant.name }}",
+              price: {{ variant.price }},
+              unit:"{{ variant.unit }}",
+              available: {{ variant.available|lower }}
+            },
+            {% endfor %}
+          ],
+          image_filename: "{{ service.image_filename }}",
+          description: `{{ service.description | escape | replace('\n', ' ') }}`
+        });
+      {% endfor %}
+    {% endfor %}
+  {% endfor %}
+
+  return Object.values(categoriesMap);
+}
+
+const categories = prepareCategories();
+let activeCategoryId = categories[0]?.id || null;
+let cartQuantities = {};
+let currentExpandedImage = null;
+
+function prepareAllServices() {
+  let allServices = [];
+  const seenServiceIds = new Set(); // Track service IDs we've already added
+
+  categories.forEach(category => {
+    category.subcategories.forEach(subcategory => {
+      subcategory.services.forEach(service => {
+        // Only add each service once (not per variant)
+        if (!seenServiceIds.has(service.id)) {
+          seenServiceIds.add(service.id);
+
+          // Find the first available variant (or first variant if none are available)
+          const firstVariant = service.variants.find(v => v.available) || service.variants[0];
+
+          allServices.push({
+            id: service.id,
+            name: service.name,
+            price: firstVariant.price,
+            unit: firstVariant.unit,
+            available: firstVariant.available,
+            categoryId: category.id,
+            subcategoryName: subcategory.name,
+            variants: service.variants, // Keep all variants for later use
+            image_filename: service.image_filename,
+            description: service.description
+          });
+        }
+      });
+    });
+  });
+  return allServices;
+}
+
+let allServices = prepareAllServices();
+
+// Hindi-English Hybrid Fuzzy Search
+function fuzzySearch(query, services) {
+  if (!query || query.trim().length < 2) return [];
+
+  // Normalize query - handle both Hindi and English
+  const normalizedQuery = query.toLowerCase()
+    .replace(/[^\w\s\u0900-\u097F]/g, '') // Allow Hindi characters
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Hindi-English phonetic mappings
+  const phoneticMap = {
+    'a': ['a', 'aa', 'e', 'अ', 'आ'],
+    'b': ['b', 'v', 'ब', 'भ'],
+    'c': ['c', 'k', 'ch', 'क', 'च'],
+    'd': ['d', 'dh', 'ड', 'द', 'ध'],
+    'e': ['e', 'a', 'ai', 'ए', 'ऐ'],
+    'f': ['f', 'ph', 'फ'],
+    'g': ['g', 'j', 'ग', 'ज'],
+    'h': ['h', 'ह'],
+    'i': ['i', 'ee', 'y', 'इ', 'ई'],
+    'j': ['j', 'g', 'z', 'ज'],
+    'k': ['k', 'q', 'c', 'क'],
+    'l': ['l', 'r', 'ल', 'ळ'],
+    'm': ['m', 'n', 'म'],
+    'n': ['n', 'ng', 'न', 'ण'],
+    'o': ['o', 'oh', 'au', 'ओ', 'औ'],
+    'p': ['p', 'f', 'प', 'फ'],
+    'q': ['q', 'k', 'क'],
+    'r': ['r', 'd', 'र', 'ड'],
+    's': ['s', 'sh', 'c', 'स', 'श' ,'sp'],
+    't': ['t', 'th', 'ट', 'त', 'थ'],
+    'u': ['u', 'oo', 'ou', 'उ', 'ऊ'],
+    'v': ['v', 'b', 'w', 'व'],
+    'w': ['w', 'v', 'व'],
+    'x': ['x', 'ks', 'क्ष'],
+    'y': ['y', 'i', 'य'],
+    'z': ['z', 'j', 'ज']
+  };
+
+  // Use a Set to avoid duplicate search terms
+  const searchTerms = new Set();
+  const words = normalizedQuery.split(' ');
+
+  words.forEach(word => {
+    if (word.length < 2) return;
+    searchTerms.add(word); // Add original word
+  });
+
+  // Convert Set back to array for processing
+  const uniqueSearchTerms = Array.from(searchTerms);
+
+  const scoredServices = services.map(service => {
+    const serviceText = `${service.name} ${service.subcategoryName}`.toLowerCase();
+    let score = 0;
+
+    uniqueSearchTerms.forEach(term => {
+      if (term.length < 2) return;
+
+      // Exact match gets highest score
+      if (serviceText.includes(term)) {
+        score += 100;
+        // Bonus for matching at start of words
+        if (new RegExp(`\\b${term}`).test(serviceText)) {
+          score += 50;
+        }
+        return;
+      }
+
+      // Partial matches
+      const termRegex = new RegExp(term.split('').join('.*'), 'i');
+      if (termRegex.test(serviceText)) {
+        score += 30;
+      }
+
+      // Word-by-word matching
+      const serviceWords = serviceText.split(/\s+/);
+      serviceWords.forEach(sWord => {
+        if (sWord.includes(term)) {
+          score += 10;
+        }
+      });
+    });
+
+    return { ...service, score };
+  });
+
+  return scoredServices
+    .filter(service => service.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const aNameMatch = a.name.toLowerCase().includes(normalizedQuery);
+      const bNameMatch = b.name.toLowerCase().includes(normalizedQuery);
+      if (aNameMatch && !bNameMatch) return -1;
+      if (!aNameMatch && bNameMatch) return 1;
+      return a.price - b.price;
+    });
+}
+
+// New function to handle variant selection
+function updateVariantPrice(selectElement, serviceId) {
+  const selectedOption = selectElement.options[selectElement.selectedIndex];
+  const price = selectedOption.dataset.price;
+  // You can store the selected variant ID in a data attribute if needed
+  selectElement.dataset.selectedVariant = selectedOption.value;
+}
+
+function updateVariantSelection(serviceId) {
+  const variantSelect = document.getElementById(`variant_${serviceId}`);
+  const variantId = variantSelect.value;
+  const variant = getVariantDetails(serviceId, variantId);
+  const service = getServiceById(serviceId);
+
+  // Update any existing quantity for this service
+  for (const key in cartQuantities) {
+    if (key.startsWith(`service_${serviceId}_`)) {
+      const oldVariantId = key.split('_')[2];
+      const qty = cartQuantities[key].qty;
+      delete cartQuantities[key];
+
+      // Create new entry with updated variant details
+      cartQuantities[`service_${serviceId}_${variantId}`] = {
+        qty: qty,
+        price: variant.price,
+        variantName: variant.name,
+        serviceName: service.name,
+        unit: variant.unit || 'per service' // Make sure to update the unit
+      };
+      break;
+    }
+  }
+  updateTotal();
+}
+
+// Modify cart functions to handle variants
+
+
+function getVariantDetails(serviceId, variantId) {
+  // Find the variant details in the categories structure
+  for (const category of categories) {
+    for (const subcategory of category.subcategories) {
+      for (const service of subcategory.services) {
+        if (service.id == serviceId) {
+          const variant = service.variants.find(v => v.id == variantId);
+          return variant || {price: 0, name: ''};
+        }
+      }
+    }
+  }
+  return {price: 0, name: ''};
+}
+
+// Update the cart display to show variant info
+
+function updateTotal() {
+  let subtotal = 0;
+  const cartItems = [];
+  const cartDiv = document.getElementById('cartItems');
+  cartDiv.innerHTML = '';
+
+  // Calculate subtotal and prepare cart items display
+  for (const [key, item] of Object.entries(cartQuantities)) {
+    if (item.qty > 0) {
+      const itemTotal = item.qty * item.price;
+      subtotal += itemTotal;
+
+      // Extract serviceId and variantId from the key
+      const parts = key.split('_');
+      const serviceId = parts[1];
+      const variantId = parts[2];
+
+      cartItems.push(`
+        <div class="cart-item">
+          <div>
+            ${item.serviceName} (${item.variantName}) (${item.unit || 'per service'} - ₹${item.price})
+          </div>
+          <div class="cart-controls">
+            <button onclick="decreaseQtyFromCart('${serviceId}', '${variantId}')">-</button>
+            <span>${item.qty}</span>
+            <button onclick="increaseQtyFromCart('${serviceId}', '${variantId}')">+</button>
+            <span>₹${itemTotal}</span>
+          </div>
+        </div>
+      `);
+    }
+  }
+
+  // Update cart display
+  cartDiv.innerHTML = cartItems.join('');
+
+  // Update subtotal display
+  document.getElementById('subtotalAmount').innerText = subtotal;
+
+  // Update total display (now just subtotal since no delivery charge)
+  document.getElementById('totalAmount').innerText = subtotal;
+
+  // Control visibility based on subtotal amount
+  const customerDetailsContainer = document.getElementById('customerDetailsContainer');
+  const placeOrderBtn = document.getElementById('placeOrderBtn');
+  const minOrderWarning = document.getElementById('minOrderWarning');
+  const combinedDetails = document.getElementById('combinedDetails');
+  const toggleIcon = document.getElementById('toggleIcon');
+
+  if (subtotal >= 100) {
+    // Show customer details section and order button
+    customerDetailsContainer.style.display = 'block';
+    placeOrderBtn.style.display = 'block';
+    minOrderWarning.style.display = 'none';
+
+    // Maintain the expanded/collapsed state
+    if (combinedDetails.style.display === 'block') {
+      toggleIcon.textContent = "➡️";
+    } else {
+      toggleIcon.textContent = "⬇️";
+    }
+  } else {
+    // Hide customer details and order button when subtotal < 100
+    customerDetailsContainer.style.display = 'none';
+    placeOrderBtn.style.display = 'none';
+    minOrderWarning.style.display = 'block';
+
+    // Collapse details section if it was open
+    combinedDetails.style.display = 'none';
+    toggleIcon.textContent = "⬇️";
+  }
+
+  // Update view cart button and sync inputs
+  updateViewCartButton();
+  updateAllServiceCardInputs();
+}
+
+// Update the navigateToService function to be more precise
+function navigateToService(categoryId, serviceId) {
+  document.getElementById('searchResults').style.display = 'none';
+  searchInput.value = ''; // Clear the search input
+  activeCategoryId = categoryId;
+  renderCategories();
+  renderSubcategories();
+
+  // Scroll to the service after a small delay to allow rendering
+  setTimeout(() => {
+    // Find the service card by the variant select element
+    const variantSelect = document.getElementById(`variant_${serviceId}`);
+    if (variantSelect) {
+      const serviceCard = variantSelect.closest('.service-card');
+      if (serviceCard) {
+        // Calculate position to scroll to (accounting for fixed headers if any)
+        const headerHeight = document.querySelector('.category-bar')?.offsetHeight || 0;
+        const scrollPosition = serviceCard.offsetTop - headerHeight - 20;
+
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+
+        // Highlight the card
+        serviceCard.style.boxShadow = '0 0 0 2px #00b386';
+        setTimeout(() => {
+          serviceCard.style.boxShadow = 'none';
+        }, 2000);
+      }
+    }
+  }, 100);
+}
+
+// Update the search results display to include proper highlighting
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  const query = e.target.value.trim();
+  const resultsContainer = document.getElementById('searchResults');
+
+  if (query.length < 2) {
+    resultsContainer.style.display = 'none';
+    return;
+  }
+
+  const results = fuzzySearch(query, allServices);
+
+  if (results.length === 0) {
+    resultsContainer.innerHTML = '<div class="search-result-item">No services found (कोई सेवा नहीं मिली)</div>';
+    resultsContainer.style.display = 'block';
+    return;
+  }
+
+  // Display top 10 results (best matches first)
+  let html = '';
+  results.slice(0, 10).forEach(service => {
+    // Get the first available variant price for display
+    const firstVariantPrice = service.variants.length > 0 ? service.variants[0].price : 0;
+
+    html += `
+      <div class="search-result-item"
+           onclick="navigateToService('${service.categoryId}', '${service.id}')">
+        <h4>${highlightText(service.name, query)}</h4>
+        <p>${highlightText(service.subcategoryName, query)} • ₹${firstVariantPrice}</p>
+      </div>
+    `;
+  });
+
+  resultsContainer.innerHTML = html;
+  resultsContainer.style.display = 'block';
+});
+
+// Ensure this is in your code (it should already be there)
+function highlightText(text, query) {
+  if (!query) return text;
+  // Escape special regex characters
+  query = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const words = query.split(/\s+/);
+
+  words.forEach(word => {
+    if (word.length > 1) {
+      // Create case-insensitive regex
+      const regex = new RegExp(`(${word})`, 'gi');
+      text = text.replace(regex, '<span class="highlight">$1</span>');
+    }
+  });
+
+  return text;
+}
+
+
+// Helper function for text content matching
+document.contains = document.contains || function(node) {
+  if (!(0 in arguments)) {
+    throw new TypeError('1 argument is required');
+  }
+  do {
+    if (this === node) return true;
+  } while (node = node && node.parentNode);
+  return false;
+};
+
+
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-container')) {
+    document.getElementById('searchResults').style.display = 'none';
+  }
+});
+
+
+
+// renderCategories function
+function renderCategories() {
+    const categoryBar = document.getElementById('categoryBar');
+    categoryBar.innerHTML = '';
+
+    categories.forEach(cat => {
+        const div = document.createElement('div');
+        div.className = 'category-item' + (cat.id === activeCategoryId ? ' active' : '');
+
+        const imageSrc = cat.image_filename ?
+            `/static/categories/${cat.image_filename}` :
+            '/static/default-category.png';
+
+        div.innerHTML = `
+            <img src="${imageSrc}" alt="${cat.name}" class="category-image"
+                 onerror="this.src='/static/default-category.png'">
+            <div class="category-name">${cat.name}</div>
+        `;
+
+        div.onclick = () => {
+            activeCategoryId = cat.id;
+            renderCategories();
+            renderSubcategories();
+
+            // Add this scroll-to-top behavior
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        };
+        categoryBar.appendChild(div);
+    });
+}
+
+function renderSubcategories() {
+  const container = document.getElementById('subcategorySection');
+  const activeCategory = categories.find(cat => cat.id === activeCategoryId);
+
+  while (container.firstChild) {
+      container.removeChild(container.firstChild);
+  }
+
+  if (!activeCategory) return;
+
+  activeCategory.subcategories.forEach(sub => {
+      const div = document.createElement('div');
+      div.className = 'subcategory';
+
+      let servicesHTML = '';
+      sub.services.forEach(service => {
+          const qtyName = 'service_' + service.id;
+          const savedQty = cartQuantities[qtyName] || 0;
+
+
+          servicesHTML += `
+          <div class="service-card">
+  <img src="/static/services/${service.image_filename || 'default-service.jpg'}"
+       alt="${service.name}"
+       class="service-image"
+       onerror="this.src='/static/default-service.jpg'">
+  <h4>${service.name}</h4>
+
+ <div class="variant-selector">
+  <select id="variant_${service.id}" onchange="updateVariantSelection(${service.id})">
+    ${service.variants.map(v => `
+      <option
+        value="${v.id}"
+        data-price="${v.price}"
+        data-available="${v.available}"
+        data-unit="${v.unit}"
+        ${!v.available ? 'disabled' : ''}
+      >
+        ${v.name} - ₹${v.price} ${v.unit} ${!v.available ? '(Not Available)' : ''}
+      </option>
+    `).join('')}
+  </select>
+</div>
+
+  ${service.description ? `
+    <button onclick="showBlackPopup(this, \`${service.description.replace(/`/g, "\\`")}\`)">View Details</button>
+    <div class="black-popup"></div>
+  ` : ''}
+
+
+  <div class="cart-controls">
+    ${service.variants.some(v => v.available) ? `
+      ${cartQuantities[`service_${service.id}_${service.variants[0].id}`]?.qty > 0 ? `
+        <button type="button" onclick="decreaseQty(this, ${service.id})">-</button>
+        <input type="text" name="service_${service.id}_${service.variants[0].id}"
+               value="${cartQuantities[`service_${service.id}_${service.variants[0].id}`]?.qty || 0}" readonly>
+        <button type="button" onclick="increaseQty(this, ${service.id})">+</button>
+      ` : `
+        <button type="button" class="add-button"
+                onclick="initialAdd(this, ${service.id})">
+          Add+
+        </button>
+      `}
+    ` : `
+      <button type="button" class="add-button" disabled>
+        Not Available
+      </button>
+    `}
+  </div>
+</div>`;
+
+      });
+
+      div.innerHTML = `<h3>${sub.name}</h3>
+                      <div class="service-grid">${servicesHTML}</div>`;
+      container.appendChild(div);
+  });
+}
+
+function increaseQty(btn, serviceId) {
+  const variantSelect = document.getElementById(`variant_${serviceId}`);
+  const variantId = variantSelect.value;
+  const variant = getVariantDetails(serviceId, variantId);
+  const input = btn.parentElement.querySelector('input');
+  const name = `service_${serviceId}_${variantId}`;
+
+  input.value = parseInt(input.value) + 1;
+  cartQuantities[name] = {
+    qty: parseInt(input.value),
+    price: variant.price,
+    variantName: variant.name,
+    serviceName: getServiceById(serviceId).name,
+    unit: variant.unit || 'per service' // Make sure unit is included
+  };
+  updateTotal();
+  updateViewCartButton();
+}
+
+function decreaseQty(btn, serviceId) {
+  const variantSelect = document.getElementById(`variant_${serviceId}`);
+  const variantId = variantSelect.value;
+  const variant = getVariantDetails(serviceId, variantId);
+  const input = btn.parentElement.querySelector('input');
+  const name = `service_${serviceId}_${variantId}`;
+  const val = parseInt(input.value);
+
+  if (val > 1) {
+    input.value = val - 1;
+    cartQuantities[name] = {
+      qty: val - 1,
+      price: variant.price,
+      variantName: variant.name,
+      serviceName: getServiceById(serviceId).name,
+      unit: variant.unit || 'per service'
+    };
+  } else if (val === 1) {
+    // If decreasing from 1, remove the item completely
+    const controlsDiv = btn.parentElement;
+    controlsDiv.innerHTML = `
+      <button type="button" class="add-button"
+              onclick="initialAdd(this, ${serviceId})">
+        Add+
+      </button>
+    `;
+    delete cartQuantities[name];
+  }
+
+  updateTotal();
+  updateViewCartButton();
+}
+
+function updateViewCartButton() {
+  const viewCartBtn = document.getElementById('viewCartBtn');
+  const cartItemCount = document.getElementById('cartItemCount');
+
+  // Calculate total items in cart
+  let totalItems = 0;
+  for (const key in cartQuantities) {
+    if (cartQuantities[key].qty > 0) {
+      totalItems += cartQuantities[key].qty;
+    }
+  }
+
+  if (totalItems > 0) {
+    viewCartBtn.style.display = 'flex';
+    cartItemCount.textContent = totalItems + ' ITEMS';
+
+    // Check if cart section is visible
+    const cartSection = document.getElementById('orderSummary');
+    if (cartSection) {
+      const rect = cartSection.getBoundingClientRect();
+      const isSummaryVisible = rect.top <= window.innerHeight && rect.bottom >= 0;
+
+      if (isSummaryVisible) {
+        viewCartBtn.classList.add('hide-when-summary-visible');
+      } else {
+        viewCartBtn.classList.remove('hide-when-summary-visible');
+      }
+    }
+  } else {
+    viewCartBtn.style.display = 'none';
+  }
+}
+
+// Add scroll event listener
+window.addEventListener('scroll', function() {
+  updateViewCartButton();
+});
+
+document.getElementById('viewCartBtn')?.addEventListener('click', function(e) {
+  e.preventDefault();
+  const cartElement = document.getElementById('orderSummary');
+  if (cartElement) {
+    const categoryBar = document.getElementById('categoryBar');
+    const headerHeight = categoryBar ? categoryBar.offsetHeight : 0;
+    const cartPosition = cartElement.getBoundingClientRect().top;
+    const scrollPosition = window.pageYOffset + cartPosition - headerHeight;
+    window.scrollTo({
+      top: scrollPosition,
+      behavior: 'smooth'
+    });
+  }
+});
+
+
+
+function increaseQtyFromCart(serviceId, variantId) {
+  const name = `service_${serviceId}_${variantId}`;
+  const currentItem = cartQuantities[name] || { qty: 0 };
+  const variant = getVariantDetails(serviceId, variantId);
+  const service = getServiceById(serviceId);
+
+  cartQuantities[name] = {
+    qty: currentItem.qty + 1,
+    price: variant.price,
+    variantName: variant.name,
+    serviceName: service.name,
+    unit: variant.unit || 'per service'
+  };
+
+  updateTotal();
+}
+
+function decreaseQtyFromCart(serviceId, variantId) {
+  const name = `service_${serviceId}_${variantId}`;
+  const currentItem = cartQuantities[name] || { qty: 0 };
+
+  if (currentItem.qty > 1) {
+    cartQuantities[name] = {
+      qty: currentItem.qty - 1,
+      price: currentItem.price,
+      variantName: currentItem.variantName,
+      serviceName: currentItem.serviceName,
+      unit: currentItem.unit
+    };
+  } else {
+    delete cartQuantities[name];
+
+    // Find the service card and reset it to "Add+" button
+    const controlsDiv = document.querySelector(`input[name="service_${serviceId}_${variantId}"]`)?.parentElement;
+    if (controlsDiv) {
+      controlsDiv.innerHTML = `
+        <button type="button" class="add-button"
+                onclick="initialAdd(this, ${serviceId})">
+          Add+
+        </button>
+      `;
+    }
+  }
+
+  updateTotal();
+}
+
+
+function updateAllServiceCardInputs() {
+  for (const [key, item] of Object.entries(cartQuantities)) {
+    if (item.qty > 0) {
+      const parts = key.split('_');
+      const serviceId = parts[1];
+      const variantId = parts[2];
+
+      // Find the input element for this service
+      const input = document.querySelector(`input[name="service_${serviceId}_${variantId}"]`);
+      const controlsDiv = input ? input.parentElement : null;
+
+      if (input) {
+        input.value = item.qty;
+      } else if (controlsDiv) {
+        // If no input exists but we have quantity, create the controls
+        controlsDiv.innerHTML = `
+          <button type="button" onclick="decreaseQty(this, ${serviceId})">-</button>
+          <input type="text" name="service_${serviceId}_${variantId}" value="${item.qty}" readonly>
+          <button type="button" onclick="increaseQty(this, ${serviceId})">+</button>
+        `;
+      }
+    }
+  }
+}
+
+function updateServiceCardInput(serviceId) {
+  const name = 'service_' + serviceId;
+  const currentQty = cartQuantities[name] || 0;
+  const input = document.querySelector(`input[name="service_${serviceId}"]`);
+  const controlsDiv = input ? input.parentElement : null;
+
+  if (currentQty > 0) {
+    if (input) {
+      input.value = currentQty;
+    } else if (controlsDiv) {
+      // Replace Add+ with quantity controls
+      controlsDiv.innerHTML = `
+        <button type="button" onclick="decreaseQty(this, ${service.price}, ${serviceId})">-</button>
+        <input type="text" name="service_${serviceId}" value="${currentQty}" readonly>
+        <button type="button" onclick="increaseQty(this, ${service.price}, ${serviceId})">+</button>
+      `;
+    }
+  } else {
+    if (controlsDiv) {
+      // Replace quantity controls with Add+
+      controlsDiv.innerHTML = `
+        <button type="button" class="add-button"
+                onclick="initialAdd(this, ${service.price}, ${serviceId})">
+          Add+
+        </button>
+      `;
+    }
+  }
+}
+
+
+
+// Initialize the page
+
+if (categories.length > 0) {
+  renderCategories();
+  renderSubcategories();
+  updateTotal(); // Add this line
+}
+
+
+// Payment mode change handler
+document.querySelector('select[name="payment_mode"]')?.addEventListener('change', function() {
+  const upiSection = document.getElementById('upiSection');
+  if (this.value === 'UPI') {
+    upiSection.style.display = 'block';
+  } else {
+    upiSection.style.display = 'none';
+  }
+});
+
+setupCartVisibilityObserver();
+
+function validateName(input) {
+  const errorElement = document.getElementById('nameError');
+  const nameRegex = /^[A-Za-z ]{2,30}$/;
+
+  if (!nameRegex.test(input.value)) {
+    errorElement.textContent = 'Please enter a valid name (2-30 alphabetic characters only)';
+    input.setCustomValidity('Invalid name');
+  } else {
+    errorElement.textContent = '';
+    input.setCustomValidity('');
+  }
+}
+
+function validatePhone(input) {
+  const errorElement = document.getElementById('phoneError');
+  const phoneRegex = /^[0-9]{10}$/;
+
+  if (!phoneRegex.test(input.value)) {
+    errorElement.textContent = 'Please enter exactly 10 digits';
+    input.setCustomValidity('Invalid phone number');
+  } else {
+    errorElement.textContent = '';
+    input.setCustomValidity('');
+  }
+}
+
+function validateAddress(input) {
+  const errorElement = document.getElementById('addressError');
+  const wordCount = input.value.trim().split(/\s+/).length;
+
+  if (input.value.length < 5) {
+    errorElement.textContent = 'Address too short (minimum 5 characters)';
+    input.setCustomValidity('Address too short');
+  } else if (wordCount > 25) {
+    errorElement.textContent = 'Address too long (maximum 25 words)';
+    input.setCustomValidity('Address too long');
+  } else {
+    errorElement.textContent = '';
+    input.setCustomValidity('');
+  }
+}
+
+
+function toggleCombinedSection() {
+  const section = document.getElementById('combinedDetails');
+  const icon = document.getElementById('toggleIcon');
+  const isHidden = section.style.display === "none";
+
+  section.style.display = isHidden ? "block" : "none";
+  icon.textContent = isHidden ? "➡️" : "⬇️";
+}
+function showServiceDetails(name, description) {
+    document.getElementById('modalServiceName').textContent = name;
+    document.getElementById('modalServiceDescription').textContent = description;
+    document.getElementById('serviceDetailsModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('serviceDetailsModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('serviceDetailsModal');
+    if (event.target == modal) {
+        modal.style.display = 'none';
+    }
+}
+function toggleDescription(btn) {
+  const desc = btn.nextElementSibling;
+  if (desc.style.display === 'none') {
+    desc.style.display = 'block';
+    btn.textContent = 'Hide Details';
+  } else {
+    desc.style.display = 'none';
+    btn.textContent = 'View Details';
+  }
+}
+
+function showBlackPopup(button, description) {
+  const serviceCard = button.closest('.service-card');
+  const serviceName = serviceCard.querySelector('h4').textContent;
+
+  const modal = document.getElementById('productDetailsModal');
+  const productName = document.getElementById('modalProductName');
+  const productDesc = document.getElementById('modalProductDescription');
+
+  productName.textContent = serviceName;
+  productDesc.textContent = description;
+
+  // Show modal
+  modal.style.display = 'block';
+
+  // Close modal when clicking anywhere
+  const closeModal = function(e) {
+    if (modal.style.display === 'block') {
+      modal.style.display = 'none';
+      document.removeEventListener('click', closeModal);
+    }
+  };
+
+  // Add slight delay to prevent immediate closing when clicking the button
+  setTimeout(() => {
+    document.addEventListener('click', closeModal);
+  }, 100);
+
+  // Prevent propagation from modal content
+  modal.querySelector('.modal-content').addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+}
+
+function initialAdd(btn, serviceId) {
+  const variantSelect = document.getElementById(`variant_${serviceId}`);
+  const variantId = variantSelect.value;
+  const variant = getVariantDetails(serviceId, variantId);
+  const service = getServiceById(serviceId);
+
+  const name = `service_${serviceId}_${variantId}`;
+
+  cartQuantities[name] = {
+    qty: 1,
+    price: variant.price,
+    variantName: variant.name,
+    serviceName: service.name,
+    unit: variant.unit || 'per service'
+  };
+
+  // Replace the Add+ button with quantity controls
+  const controlsDiv = btn.parentElement;
+  controlsDiv.innerHTML = `
+    <button type="button" onclick="decreaseQty(this, ${serviceId})">-</button>
+    <input type="text" name="${name}" value="1" readonly>
+    <button type="button" onclick="increaseQty(this, ${serviceId})">+</button>
+  `;
+
+  updateTotal();
+}
+
+
+function getServiceById(serviceId) {
+  for (const category of categories) {
+    for (const subcategory of category.subcategories) {
+      for (const service of subcategory.services) {
+        if (service.id == serviceId) {
+          return service;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+      // Play sound effect
+      const audio = new Audio();
+      audio.src = "data:audio/mpeg;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQsRbAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zQMSkAAADSAAAAABVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+      audio.volume = 0.3;
+
+      // Say "Pink Tongue" in a playful way
+      setTimeout(() => {
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = "Pink Tongue";
+        msg.rate = 0.9;
+        msg.pitch = 1.2;
+        window.speechSynthesis.speak(msg);
+      }, 500);
+
+      // Hide splash screen after animation
+      setTimeout(() => {
+        document.getElementById('splashScreen').style.display = 'none';
+      }, 2500);
+    });
+</script>
+<div id="serviceDetailsModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h3 id="modalServiceName"></h3>
+        <p id="modalServiceDescription"></p>
+    </div>
+</div>
+<!-- Product Details Modal -->
+<div id="productDetailsModal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalProductName"></h3>
+    <p id="modalProductDescription"></p>
+  </div>
+</div>
+</body>
+</html>
