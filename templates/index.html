@@ -107,20 +107,20 @@
 <div class="splash-screen" id="splashScreen">
   <div class="splash-logo">
     <img
-      src="/static/ranchi-logo (1).png"
-      alt="Ranchi Mess Service"
+      src="/static/logo3.png"
+      alt="Ranchi Mess.Com"
       class="white-logo"
       style="max-width: 270px; height: auto;">
   </div>
 </div>
   <div class="contact-float">
     <!-- Phone Button -->
-    <a href="tel:8969161759" class="contact-btn phone-btn">
+    <a href="tel:8709625288" class="contact-btn phone-btn">
       <img src="/static/call-logo.png" alt="Call">
     </a>
 
     <!-- WhatsApp Button -->
-    <a href="https://wa.me/+918969161759?text=Hi%20Mani%20Bro,%20I%20need%20a%20mess"
+    <a href="https://wa.me/+918709625288?text=Hi%20Mani%20Bro,%20I%20need%20a%20mess"
        class="contact-btn whatsapp-btn">
       <img src="/static/whatsapp.png" alt="WhatsApp">
     </a>
@@ -129,7 +129,7 @@
   {% if not show_whatsapp %}
   <form method="POST" action="/submit_order">
     <div class="container">
-      <h1>Ranchi Mess Service</h1>
+      <h1>Ranchi Mess.Com</h1>
 
       <div class="search-container">
         <input type="text" class="search-bar" placeholder="Search For Service. . . . ." id="searchInput" autocomplete="off">
@@ -138,7 +138,7 @@
      <!-- Search Container के बाद यह जोड़ें -->
 <div class="delivery-banner">
   <span class="twinkle">✨</span>
-  <span>Search And Order Meal</span>
+  <span id="mealTiming"></span>
   <span class="twinkle">✨</span>
 </div>
       <div class="category-bar" id="categoryBar"></div>
@@ -172,7 +172,7 @@
     <div id="customerSection"></div>
     <div id="combinedDetails" style="display: none; margin-top: 15px;">
       <!-- Customer Details -->
-      <input type="text" name="name" placeholder="Your Name" required
+      <input type="text" name="name" placeholder="Your Mess ID Number" required
            pattern="[A-Za-z ]{2,30}"
            title="Please enter a valid name (2-30 alphabetic characters)"
            oninput="validateName(this)">
@@ -220,7 +220,7 @@
 </div>
 
 <div id="minOrderWarning">
-  <strong>Minimum service amount is ₹100</strong>
+  <strong>Search And Order Your Meal</strong>
 </div>
 
 <div id="hiddenCartInputs"></div>
@@ -265,8 +265,8 @@ document.querySelector('form').addEventListener('submit', generateHiddenInputs);
     <a href="/about" class="footer-link"
 style= "font-weight:bold;">🖥 About</a>
   </div>
-  <p style="font-weight:bold;color:white;">&copy;2025 Ranchi Mess Service Developed By
-    <a href="https://wa.me/+918969161759?text=Hi%20Mani%2C%20I%20need%20your%20Mess" target="_blank"
+  <p style="font-weight:bold;color:white;">&copy;2025 Ranchi Mess.Com Developed By
+    <a href="https://wa.me/+917050589814?text=Hi%20Suryamani%2C%20I%20need%20your%20Website" target="_blank"
 style= "font-weight:bold;color:red;font-size:14px;">
       Suryamani
     </a>
@@ -1222,6 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('splashScreen').style.display = 'none';
       }, 2500);
     });
+
 </script>
 <div id="serviceDetailsModal" class="modal">
     <div class="modal-content">
@@ -1237,5 +1238,33 @@ document.addEventListener('DOMContentLoaded', function() {
     <p id="modalProductDescription"></p>
   </div>
 </div>
+<script>
+function updateMealTiming() {
+  const banner = document.getElementById("mealTiming");
+  const now = new Date();
+  const hour = now.getHours();
+
+  let message = "";
+
+  // Agar raat 8 baje (20) se subah 9 baje (09) ke beech hai → Lunch timing
+  if (hour >= 20 || hour < 9) {
+    message = "Lunch Order Time : 8pm to 9am ";
+  }
+  // Agar subah 9 se raat 8 baje (20) ke beech hai → Dinner timing
+  else {
+    message = "Dinner Order Time : 9am to 8pm ";
+  }
+
+  if (banner) {
+    banner.textContent = message;
+  }
+}
+
+// Page load par call karo
+updateMealTiming();
+
+// Har 5 minute me refresh bhi ho jaye
+setInterval(updateMealTiming, 5 * 60 * 1000);
+</script>
 </body>
 </html>

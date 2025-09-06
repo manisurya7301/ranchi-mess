@@ -250,7 +250,7 @@ def submit_order():
     current_time = datetime.now(indian_timezone).strftime("%d-%m-%Y %I:%M %p")
 
     message_parts = [
-        "📌 *Mess Ranchi* 📌",
+        "📌 * Ranchi Mess.Com* 📌",
         f"📅 *Date*: {current_time}",
         "",
         "👤 *Customer Details*:",
@@ -289,7 +289,7 @@ def submit_order():
     ])
 
     full_message = "\n".join(message_parts)
-    whatsapp_url = f"https://wa.me/+918969161759?text={requests.utils.quote(full_message)}"
+    whatsapp_url = f"https://wa.me/+918709625288?text={requests.utils.quote(full_message)}"
 
     return redirect(whatsapp_url)
 # Admin routes
